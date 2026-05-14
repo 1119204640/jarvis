@@ -45,16 +45,14 @@ def preprocess(data):
 async def handle_logic(open_id, user_text):
     try:
         current_date = utils.format_time(utils.get_beijing_time())
-        utils.log_error(current_date)
-        
-        system_promt = JARVIS_SYSTEM_PROMPT.format(current_date)
-        utils.log_error(system_promt)
+        system_prompt = JARVIS_SYSTEM_PROMPT.format(current_date=current_date)
+        utils.log_error(system_prompt, True)
 
-        ai_reply = await Agent.get_deepseek_response(system_promt, user_text)
+        ai_reply = await Agent.get_deepseek_response(system_prompt, user_text)
         await jarvis.reply(open_id, ai_reply)
 
     except Exception as e:
-        utils.log_error(f"AI 调用失败: {e}")
+        utils.log_error(f"AI 调用失败: {e}", True)
         await jarvis.reply(open_id, "抱歉主人，我的大脑连接 DeepSeek 时出了一点小状况。")
 
 app = FastAPI()
