@@ -28,7 +28,3 @@ def log_info(msg):
 
 def log_success(msg):
     _log(msg, "bold green", "SUCCESS")
-
-# 使用示例
-log_success("代码同步完成")
-log_error("数据库连接失败", show_traceback=True)
