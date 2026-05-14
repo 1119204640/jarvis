@@ -2,6 +2,7 @@ import json
 import httpx
 import time
 from constants import FEISHU_APP_ID, FEISHU_APP_SECRET
+import utils
 
 # --- 飞书工具类：管理 Token 和 API ---
 class FeiShuClient:
@@ -39,7 +40,6 @@ class FeiShuClient:
         
         async with httpx.AsyncClient() as client:
             resp = await client.post(url=url, json=payload, headers=headers)
-            # print(f"回复消息结果: {json.dumps(resp.json(), indent=4, ensure_ascii=False)}")
 
     # 添加任务到多维表格
     async def add_task_record(self, task_name: str):
@@ -50,7 +50,6 @@ class FeiShuClient:
         table_id = 'tbl4AJYfq9jK6CV3'
 
         url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_id}/tables/{table_id}/records"
-        print(f"表格 url = {url}")
 
         headers = {
             "Authorization": f"Bearer {token}",
@@ -70,11 +69,11 @@ class FeiShuClient:
         async with httpx.AsyncClient() as client:
             response = await client.post(url, json=payload, headers=headers)
             result = response.json()
-            print(json.dumps(result, indent=2))
+            utils.log_info(json.dumps(result, indent=2))
 
             if result.get("code") == 0:
-                print(f"{task_name} 成功")
+                utils.log_success(f"{task_name} 成功")
                 return True
             else:
-                print(f"失败: {result.get('msg')}")
+                utils.log_error(f"失败: {result.get('msg')}")
                 return False

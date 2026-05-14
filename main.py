@@ -33,7 +33,7 @@ def preprocess(data):
 
     event_id = data.get("header", {}).get("event_id")
     if event_id in processed_event_ids:
-        print(f"--- 拦截到重试请求: {event_id} ---")
+        utils.log_info(f"--- 拦截到重试请求: {event_id} ---")
         return {"code": 0} # 假装处理过了，让飞书闭嘴
 
     processed_event_ids.add(event_id)   # 没处理过的存进去
@@ -45,12 +45,16 @@ def preprocess(data):
 async def handle_logic(open_id, user_text):
     try:
         current_date = utils.format_time(utils.get_beijing_time())
+        utils.log_error(current_date)
+        
         system_promt = JARVIS_SYSTEM_PROMPT.format(current_date)
+        utils.log_error(system_promt)
+
         ai_reply = await Agent.get_deepseek_response(system_promt, user_text)
         await jarvis.reply(open_id, ai_reply)
 
     except Exception as e:
-        print(f"AI 调用失败: {e}")
+        utils.log_error(f"AI 调用失败: {e}")
         await jarvis.reply(open_id, "抱歉主人，我的大脑连接 DeepSeek 时出了一点小状况。")
 
 app = FastAPI()

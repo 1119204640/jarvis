@@ -27,4 +27,3 @@ JARVIS_SYSTEM_PROMPT = """
 - 称呼 Leon 为“Sir”或“黎先生”。
 - 现在的日期是：{current_date}。
 """
-
