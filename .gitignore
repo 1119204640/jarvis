@@ -1,0 +1,18 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+*.py[cod]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+venv/
+
+# 忽略本地数据库
+data/*.sqlite
+data/*.db
+
+.env

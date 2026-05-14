@@ -17,13 +17,17 @@
 
 from fastapi import FastAPI, Request, BackgroundTasks
 from pydantic import BaseModel
+from dotenv import load_dotenv
+import os
 import uvicorn
 import json
 import httpx
 import time
 
-# TODO: should be hidden
-DEEP_SEEK_KEY = "sk-a7b79d5d3d924320a7044ee3ddc26dd1"
+# 这行代码会自动寻找当前目录下的 .env 文件，并将其变量加载到系统环境变量中
+load_dotenv()
+
+DEEP_SEEK_KEY = os.getenv("DEEP_SEEK_KEY")
 DEEP_SEEK_URL = "https://api.deepseek.com/chat/completions"
 
 # 请求 DeepSeek 获取 AI 回复
@@ -51,9 +55,8 @@ async def get_ai_response(user_text: str):
         return result['choices'][0]['message']['content']
 
 
-# TODO: should be hidden in production
-APP_ID = "cli_aa8efa0407a35cd9"
-APP_SECRET = "IscvxfRXX7E04JRNuZ21HebVF2GDHUtM"
+FEISHU_APP_ID = os.getenv("FEISHU_APP_ID")
+FEISHU_APP_SECRET = os.getenv("FEISHU_APP_SECRET")
 
 app = FastAPI()
 
@@ -70,7 +73,7 @@ class FeiShuClient:
 
         url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
         async with httpx.AsyncClient() as client:
-            resp = await client.post(url=url, json = {"app_id": APP_ID, "app_secret": APP_SECRET})
+            resp = await client.post(url=url, json = {"app_id": FEISHU_APP_ID, "app_secret": FEISHU_APP_SECRET})
             data = resp.json()
             self.token = data.get("tenant_access_token")
             self.expire = time.time() + data.get("expires", 7200) - 600 # 提前10分钟过期
@@ -98,8 +101,11 @@ class FeiShuClient:
     # 添加任务到多维表格
     async def add_task_record(self, task_name: str):
         token = await self.get_token()
+
+        # 暂时先写死
         app_id = 'MxWcbAVQlaYqRVsC4p3c1zepndc'
         table_id = 'tbl4AJYfq9jK6CV3'
+
         url = f"https://open.feishu.cn/open-apis/bitable/v1/apps/{app_id}/tables/{table_id}/records"
         print(f"表格 url = {url}")
 
