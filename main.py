@@ -46,7 +46,6 @@ async def handle_logic(open_id, user_text):
     try:
         current_date = utils.format_time(utils.get_beijing_time())
         system_prompt = JARVIS_SYSTEM_PROMPT.format(current_date=current_date)
-        utils.log_error(system_prompt, True)
 
         ai_reply = await Agent.get_deepseek_response(system_prompt, user_text)
         await jarvis.reply(open_id, ai_reply)

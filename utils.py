@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from rich import print
 from rich.console import Console
+import sys
 
 BEIJING_TZ = timezone(timedelta(hours=8))
 
@@ -21,7 +22,10 @@ def _log(msg, style, prefix):
 def log_error(msg, show_traceback=False):
     _log(msg, "bold red", "ERROR")
     if show_traceback:
-        console.print_exception()
+        if sys.exc_info()[0] is not None:   # 只有当确实有异常信息时，才尝试打印堆栈
+            console.print_exception()
+        else:
+            _log("尝试打印堆栈失败：当前没有活跃的异常", "yellow", "WARN")
 
 def log_info(msg):
     _log(msg, "bold cyan", "INFO")
