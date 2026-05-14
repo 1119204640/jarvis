@@ -1,6 +1,6 @@
 # TODO: 功能待办
 """第一阶段：强壮体魄 (Stability)
-	1.	[ ] 引入 PydanticAI：用 Pydantic 模型彻底规范 get_ai_response 的输入输出。
+	1.	[ ] 引入 PydanticAI：用 Pydantic 模型彻底规范 ai 的输入输出。
 	2.	[ ] 工具解耦：将 add_task_record 改为 PydanticAI 装饰器模式，并提取到独立的 tools/ 文件夹。
 	3.	[ ] 消息签名校验：利用飞书 Secret 校验请求合法性，挡掉那些 404 扫描器。
     4.  [ ] 增加消息卡片：机器人回一个按钮卡片，上面直接带“结束任务”、“撤销任务“、“查看所有任务“的按钮
