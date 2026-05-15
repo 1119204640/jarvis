@@ -32,7 +32,7 @@ class FeiShuClient:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"}
         async with httpx.AsyncClient() as client:
             resp = await client.request(method, f"{self.base_url}{path}", headers=headers, **kwargs)
-            log(json.dumps(resp.json(), indent=4))
+            log(json.dumps(resp.json(), indent=2, ensure_ascii=False))
             return resp.json()
 
     # 回复文字消息函数
