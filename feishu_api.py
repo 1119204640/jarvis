@@ -41,10 +41,11 @@ class FeiShuClient:
         payload = {"receive_id": open_id, "msg_type": "text", "content": content}
         return await self._request("POST", path, json=payload)
 
-    # 在指定文件夹下创建一个多维表格。
-    async def create_bitable(self, name: str, folder_token: str):
-        log(f">>> create_bitable 被调用了！", level="success")
-
+    async def create_base_app(self, name: str, folder_token: str):
+        """
+        创建一个新的多维表格文件 (Base App)
+        对应接口: POST /open-apis/bitable/v1/apps
+        """
         path = "/bitable/v1/apps"
         payload = {
             "name": name,
