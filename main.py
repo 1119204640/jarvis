@@ -23,13 +23,11 @@ from ai_agent import Agent
 from constants import JARVIS_SYSTEM_PROMPT
 import utils
 
-# 实例化
-jarvis = FeiShuClient()
-
 # 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
 # 保险1：这里定义一个简单的缓存，如果收到飞书发来相同的 event_id 就不做回应，让飞书不再请求
+processed_event_ids = set()
 def preprocess(data):
-    processed_event_ids = set() # TODO:转用 redis 或者 diskcache，设置一个 10 分钟自动过期的 key
+    global processed_event_ids # TODO:转用 redis 或者 diskcache，设置一个 10 分钟自动过期的 key
 
     event_id = data.get("header", {}).get("event_id")
     if event_id in processed_event_ids:
@@ -39,6 +37,9 @@ def preprocess(data):
     processed_event_ids.add(event_id)   # 没处理过的存进去
     if len(processed_event_ids) > 1000:
         processed_event_ids.clear() # 避免 set 会越来越大，最终吃光内存
+
+# 实例化
+jarvis = FeiShuClient()
 
 # 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
 # 保险2：这里作异步处理，先回复了飞书，再在后台慢慢处理 AI 逻辑
