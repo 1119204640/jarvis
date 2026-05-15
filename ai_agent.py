@@ -38,4 +38,5 @@ def inject_dynamic_context(ctx: RunContext[FeiShuClient]) -> str:
 
 async def get_ai_raw_response(user_text, client_instance):
     resp = await jarvis_agent.run(user_text, deps=client_instance)
-    return resp
+    utils.log_info(resp)
+    return resp.output.reply
