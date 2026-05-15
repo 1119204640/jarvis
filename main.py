@@ -58,7 +58,8 @@ app = FastAPI()
 # 主逻辑起点
 @app.post("/webhook")
 async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
-    log(jarvis_agent._build_toolset_list(), "info", False, True)
+    log(f"main -> Jarvis 身份标识 (ID): {id(jarvis_agent)}")
+    log(jarvis_agent._build_toolset_list().output_schema.toolset._tool_defs)
 
     data = await request.json()
 

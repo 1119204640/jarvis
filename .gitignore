@@ -16,3 +16,4 @@ data/*.sqlite
 data/*.db
 
 .env
+.log

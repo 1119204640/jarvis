@@ -2,10 +2,11 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
-
 import constants
 from feishu_api import FeiShuClient
 from utils import get_current_date_str
+from logger import log
+
 
 # 定义输出模型
 class JarvisResponseSchema(BaseModel):
@@ -26,6 +27,7 @@ jarvis_agent = Agent(
     deps_type=FeiShuClient,                            # 声明工具将要使用的依赖类型
     retries=3                                          # 如果 AI 格式写错，框架自动打回重做最多 3 次
 )
+log(f"ai_agent -> Jarvis 身份标识 (ID): {id(jarvis_agent)}")
 
 # 动态系统提示词注入
 # 这个装饰器会在每次 jarvis_agent.run() 触发前自动执行，把最新的时间塞给 AI
