@@ -22,7 +22,7 @@ deepseek_model = OpenAIChatModel(
 # 实例化核心智能体
 jarvis_agent = Agent(
     model=deepseek_model,
-    output_type=JarvisResponseSchema,                  # 强制要求 AI 返回上面的 JSON 结构
+    # output_type=JarvisResponseSchema,                  # 强制要求 AI 返回上面的 JSON 结构
     system_prompt=constants.JARVIS_SYSTEM_PROMPT,      # 静态的基础性格设定
     deps_type=FeiShuClient,                            # 声明工具将要使用的依赖类型
     retries=3                                          # 如果 AI 格式写错，框架自动打回重做最多 3 次

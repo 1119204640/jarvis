@@ -1,6 +1,7 @@
 import json
 import httpx
 import time
+from logger import log
 from constants import FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_ROOT_FOLDER_TOKEN, FEISHU_BASE_URL
 
 # --- 飞书工具类：管理 Token 和 API ---
@@ -31,6 +32,7 @@ class FeiShuClient:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"}
         async with httpx.AsyncClient() as client:
             resp = await client.request(method, f"{self.base_url}{path}", headers=headers, **kwargs)
+            log(json.dumps(resp.json(), indent=4))
             return resp.json()
 
     # 回复文字消息函数
