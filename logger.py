@@ -8,7 +8,7 @@ from pathlib import Path
 
 _console = Console()
 _log_file = "log/server.log"  # 默认日志文件名
-_BASIC_TYPES = (int, float, str, bool, bytes, type(None), list, tuple, dict, set)
+_BASIC_TYPES = (int, float, str, bool, bytes, type(None))
 
 # ==========================================
 # 配置函数（可选）
@@ -69,8 +69,15 @@ def log(data, level="info", show_traceback=False, methods=False):
             else:
                 _console.print(f"[{styles['WARN']}]WARN[/{styles['WARN']}] | 尝试打印堆栈失败：当前没有活跃的异常")
                 _write_to_file("[WARN] | 尝试打印堆栈失败：当前没有活跃的异常")
+
+    # 场景 2：遇到了 List, Dict, Set 等集合结构
+    elif isinstance(data, (list, tuple, dict, set)):
+        _console.print(f"[{style}]{level}[/{style}] | [bold yellow]开始展开集合 -> {type(data).__name__}[/bold yellow]")
+        # 针对集合类型，直接用 console.print，Rich 会自动进行缩进和换行
+        _console.print(data)
+        _write_to_file(f"[{level}] | 集合数据: {str(data)}")
                 
-    # 场景 2：复杂对象（触发 inspect）
+    # 场景 3：复杂对象（触发 inspect）
     else:
         obj_name = type(data).__name__
         prefix_msg = f"开始检查对象 -> {obj_name}"
