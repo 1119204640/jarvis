@@ -4,6 +4,7 @@ from datetime import datetime
 from rich import inspect
 from rich.console import Console
 from utils import get_current_date_str
+from pathlib import Path
 
 _console = Console()
 _log_file = "log/server.log"  # 默认日志文件名
@@ -23,7 +24,12 @@ def set_log_file(file_path):
 def _write_to_file(plain_text):
     """将纯文本追加写入本地日志文件"""
     time_str = get_current_date_str()
-    with open(_log_file, "a", encoding="utf-8") as f:
+    
+    # 自动获取文件的父级目录（即 log 文件夹），如果不存在就创建它
+    log_path = Path(_log_file)
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    
+    with open(log_path, "a", encoding="utf-8") as f:
         f.write(f"[{time_str}] {plain_text}\n")
 
 # ==========================================
