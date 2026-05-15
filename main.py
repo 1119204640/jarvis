@@ -19,11 +19,12 @@ from fastapi import FastAPI, Request, BackgroundTasks
 import uvicorn
 import json
 from feishu_api import FeiShuClient
-from ai_agent import Agent
-from constants import JARVIS_SYSTEM_PROMPT
+from ai_agent import get_ai_raw_response
 import utils
 
 # 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
+# 下面作两个保险处理
+
 # 保险1：这里定义一个简单的缓存，如果收到飞书发来相同的 event_id 就不做回应，让飞书不再请求
 processed_event_ids = set()
 def preprocess(data):
@@ -41,14 +42,10 @@ def preprocess(data):
 # 实例化
 jarvis = FeiShuClient()
 
-# 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
 # 保险2：这里作异步处理，先回复了飞书，再在后台慢慢处理 AI 逻辑
 async def handle_logic(open_id, user_text):
     try:
-        current_date = utils.format_time(utils.get_beijing_time())
-        system_prompt = JARVIS_SYSTEM_PROMPT.format(current_date=current_date)
-
-        ai_reply = await Agent.get_deepseek_response(system_prompt, user_text)
+        ai_reply = await get_ai_raw_response(user_text, jarvis)
         await jarvis.reply(open_id, ai_reply)
 
     except Exception as e:

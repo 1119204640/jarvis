@@ -1,27 +1,41 @@
-from constants import DEEPSEEK_URL, DEEPSEEK_KEY, DEEPSEEK_MODEL, DEEPSEEK_TEMPERATURE
-from openai import AsyncOpenAI
+from pydantic import BaseModel, Field
+from pydantic_ai import Agent, RunContext
+from pydantic_ai.models.openai import OpenAIChatModel
+from pydantic_ai.providers.openai import OpenAIProvider
 
-class Agent:
-    def __init__(self):
-        pass
+import constants
+from feishu_api import FeiShuClient
+import utils
 
-    # 请求 DeepSeek 获取 AI 回复
-    async def get_deepseek_response(system_content, user_content, temperature=None):
-        client = AsyncOpenAI(
-            api_key=DEEPSEEK_KEY,
-            base_url=DEEPSEEK_URL
-        )
-        try:
-            response = await client.chat.completions.create(
-                model=DEEPSEEK_MODEL,
-                messages=[
-                    {"role": "system", "content":system_content},
-                    {"role": "user", "content":user_content},
-                ],
-                stream=False,
-                temperature=temperature if temperature else DEEPSEEK_TEMPERATURE,
-            )
-            return response.choices[0].message.content
-        except Exception as e:
-            print(f"DeepSeek 调用出错: {e}")
-            return None
+# 定义输出模型
+class JarvisResponseSchema(BaseModel):
+    reply: str = Field(description="发给主人的直接回复文本，保持干练和冷幽默")
+    thought: str = Field(description="内部思考过程，记录你决定调用哪个工具、或者为何不调用")
+
+# 接 DeepSeek 模型
+deepseek_model = OpenAIChatModel(
+    model_name=constants.DEEPSEEK_MODEL,
+    provider=OpenAIProvider(api_key=constants.DEEPSEEK_KEY, base_url=constants.DEEPSEEK_URL),
+)
+
+# 实例化核心智能体
+jarvis_agent = Agent(
+    model=deepseek_model,
+    output_type=JarvisResponseSchema,                  # 强制要求 AI 返回上面的 JSON 结构
+    system_prompt=constants.JARVIS_SYSTEM_PROMPT,      # 静态的基础性格设定
+    deps_type=FeiShuClient,                            # 声明工具将要使用的依赖类型
+    retries=3                                          # 如果 AI 格式写错，框架自动打回重做最多 3 次
+)
+
+# 动态系统提示词注入
+# 这个装饰器会在每次 jarvis_agent.run() 触发前自动执行，把最新的时间塞给 AI
+@jarvis_agent.system_prompt
+def inject_dynamic_context(ctx: RunContext[FeiShuClient]) -> str:
+    # 复用我们之前写好的时间工具
+    now_obj = utils.get_beijing_time()
+    now_str = utils.format_time(now_obj)
+    return f"\n【系统动态参数】\n当前北京时间是: {now_str}"
+
+async def get_ai_raw_response(user_text, client_instance):
+    resp = await jarvis_agent.run(user_text, deps=client_instance)
+    return resp
