@@ -44,7 +44,6 @@ def log_object(obj, title="对象结构检查", methods=False):
     """
     _log(f"开始检查元素 -> {type(obj).__name__}", "bold magenta", "INSPECT")
     
-    # 利用 rich 内置的 inspect 功能，并将其包裹在一个美观的面板(Panel)里
     console.print(
         Panel(
             f"[bold yellow]类型:[/] {type(obj)}\n", 
@@ -52,4 +51,3 @@ def log_object(obj, title="对象结构检查", methods=False):
             expand=False
         )
     )
-    console.inspect(obj, methods=methods, help=False)
