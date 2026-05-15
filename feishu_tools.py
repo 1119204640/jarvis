@@ -1,6 +1,6 @@
 from pydantic_ai import RunContext
 from feishu_api import FeiShuClient
-from ai_agent import jarvis_agent  # 导入你的 agent 实例
+from ai_agent import jarvis_agent
 from constants import FEISHU_ROOT_FOLDER_TOKEN
 
 @jarvis_agent.tool

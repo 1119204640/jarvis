@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from rich import print
 from rich.console import Console
+from rich.panel import Panel
 import sys
 
 BEIJING_TZ = timezone(timedelta(hours=8))
@@ -32,3 +33,23 @@ def log_info(msg):
 
 def log_success(msg):
     _log(msg, "bold green", "SUCCESS")
+
+# 专门用来格式化打印类或对象的详细结构的
+def log_object(obj, title="对象结构检查", methods=False):
+    """
+    格式化打印一个类或对象的属性和方法
+    :param obj: 要检查的对象或类
+    :param title: 打印面板的标题
+    :param methods: 是否同时打印出对象的方法（默认只打印属性）
+    """
+    _log(f"开始检查元素 -> {type(obj).__name__}", "bold magenta", "INSPECT")
+    
+    # 利用 rich 内置的 inspect 功能，并将其包裹在一个美观的面板(Panel)里
+    console.print(
+        Panel(
+            f"[bold yellow]类型:[/] {type(obj)}\n", 
+            title=f"[bold border]{title}[/]", 
+            expand=False
+        )
+    )
+    console.inspect(obj, methods=methods, help=False)
