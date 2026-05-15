@@ -20,7 +20,7 @@ import uvicorn
 import json
 from feishu_api import FeiShuClient
 from ai_agent import get_ai_reply, jarvis_agent
-import utils
+from logger import log
 import feishu_tools
 
 # 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
@@ -33,7 +33,7 @@ def preprocess(data):
 
     event_id = data.get("header", {}).get("event_id")
     if event_id in processed_event_ids:
-        utils.log_info(f"--- 拦截到重试请求: {event_id} ---")
+        log(f"--- 拦截到重试请求: {event_id} ---")
         return {"code": 0} # 假装处理过了，让飞书闭嘴
 
     processed_event_ids.add(event_id)   # 没处理过的存进去
@@ -50,7 +50,7 @@ async def handle_logic(open_id, user_text):
         await client.reply(open_id, ai_reply)
 
     except Exception as e:
-        utils.log_error(f"AI 调用失败: {e}", True)
+        log(f"AI 调用失败: {e}", "error", True)
         await client.reply(open_id, "抱歉主人，我的大脑连接 DeepSeek 时出了一点小状况。")
 
 app = FastAPI()
@@ -58,7 +58,7 @@ app = FastAPI()
 # 主逻辑起点
 @app.post("/webhook")
 async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
-    utils.log_object(jarvis_agent._build_toolset_list(), "_build_toolset_list", True)
+    log(jarvis_agent._build_toolset_list(), "info", False, True)
 
     data = await request.json()
 

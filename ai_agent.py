@@ -5,7 +5,7 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 import constants
 from feishu_api import FeiShuClient
-import utils
+from utils import get_current_date_str
 
 # 定义输出模型
 class JarvisResponseSchema(BaseModel):
@@ -31,10 +31,7 @@ jarvis_agent = Agent(
 # 这个装饰器会在每次 jarvis_agent.run() 触发前自动执行，把最新的时间塞给 AI
 @jarvis_agent.system_prompt
 def inject_dynamic_context(ctx: RunContext[FeiShuClient]) -> str:
-    # 复用我们之前写好的时间工具
-    now_obj = utils.get_beijing_time()
-    now_str = utils.format_time(now_obj)
-    return f"\n【系统动态参数】\n当前北京时间是: {now_str}"
+    return f"\n【系统动态参数】\n当前北京时间是: {get_current_date_str()}"
 
 # 会返回 AgentRunResult 对象
 async def get_agent_run_result(user_text, client_instance):
