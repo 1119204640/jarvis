@@ -2,6 +2,7 @@ from pydantic_ai import RunContext
 from feishu_api import FeiShuClient
 from ai_agent import jarvis_agent
 from constants import FEISHU_ROOT_FOLDER_TOKEN
+from logger import log
 
 @jarvis_agent.tool
 async def create_new_base(ctx: RunContext[FeiShuClient], table_name: str):
@@ -15,6 +16,7 @@ async def create_new_base(ctx: RunContext[FeiShuClient], table_name: str):
     
     try:
         res = await client.create_bitable(table_name, root_folder)
+        log(f">>> create_new_base 被调用了！\ntable_name={table_name}\nresult={res}", level="success")
         
         # 飞书返回的数据里包含新表的链接和 Token
         app_data = res.get("data", {}).get("app", {})

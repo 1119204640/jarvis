@@ -32,7 +32,6 @@ class FeiShuClient:
         headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json; charset=utf-8"}
         async with httpx.AsyncClient() as client:
             resp = await client.request(method, f"{self.base_url}{path}", headers=headers, **kwargs)
-            log(json.dumps(resp.json(), indent=2, ensure_ascii=False))
             return resp.json()
 
     # 回复文字消息函数
@@ -44,6 +43,8 @@ class FeiShuClient:
 
     # 在指定文件夹下创建一个多维表格。
     async def create_bitable(self, name: str, folder_token: str):
+        log(f">>> create_bitable 被调用了！", level="success")
+
         path = "/bitable/v1/apps"
         payload = {
             "name": name,
