@@ -36,7 +36,11 @@ def inject_dynamic_context(ctx: RunContext[FeiShuClient]) -> str:
     now_str = utils.format_time(now_obj)
     return f"\n【系统动态参数】\n当前北京时间是: {now_str}"
 
-async def get_ai_raw_response(user_text, client_instance):
-    resp = await jarvis_agent.run(user_text, deps=client_instance)
-    utils.log_info(resp)
-    return resp.output.reply
+# 会返回 AgentRunResult 对象
+async def get_agent_run_result(user_text, client_instance):
+    resp_obj = await jarvis_agent.run(user_text, deps=client_instance)
+    return resp_obj
+
+async def get_ai_reply(user_text, client_instance):
+    reply_str = await get_agent_run_result(user_text, client_instance)
+    return reply_str

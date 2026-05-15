@@ -1,6 +1,6 @@
 # TODO: 功能待办
 """第一阶段：强壮体魄 (Stability)
-	1.	[ ] 引入 PydanticAI：用 Pydantic 模型彻底规范 ai 的输入输出。
+	1.	[X] 引入 PydanticAI：用 Pydantic 模型彻底规范 ai 的输入输出。
 	2.	[ ] 工具解耦：将 add_task_record 改为 PydanticAI 装饰器模式，并提取到独立的 tools/ 文件夹。
 	3.	[ ] 消息签名校验：利用飞书 Secret 校验请求合法性，挡掉那些 404 扫描器。
     4.  [ ] 增加消息卡片：机器人回一个按钮卡片，上面直接带“结束任务”、“撤销任务“、“查看所有任务“的按钮
@@ -19,7 +19,7 @@ from fastapi import FastAPI, Request, BackgroundTasks
 import uvicorn
 import json
 from feishu_api import FeiShuClient
-from ai_agent import get_ai_raw_response
+from ai_agent import get_ai_reply
 import utils
 
 # 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
@@ -45,7 +45,7 @@ jarvis = FeiShuClient()
 # 保险2：这里作异步处理，先回复了飞书，再在后台慢慢处理 AI 逻辑
 async def handle_logic(open_id, user_text):
     try:
-        ai_reply = await get_ai_raw_response(user_text, jarvis)
+        ai_reply = await get_ai_reply(user_text, jarvis)
         await jarvis.reply(open_id, ai_reply)
 
     except Exception as e:
