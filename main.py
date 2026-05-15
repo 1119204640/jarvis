@@ -21,6 +21,7 @@ import json
 from feishu_api import FeiShuClient
 from ai_agent import get_ai_reply
 import utils
+import feishu_tools as tools
 
 # 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
 # 下面作两个保险处理
@@ -40,17 +41,17 @@ def preprocess(data):
         processed_event_ids.clear() # 避免 set 会越来越大，最终吃光内存
 
 # 实例化
-jarvis = FeiShuClient()
 
 # 保险2：这里作异步处理，先回复了飞书，再在后台慢慢处理 AI 逻辑
 async def handle_logic(open_id, user_text):
+    client = FeiShuClient()
     try:
-        ai_reply = await get_ai_reply(user_text, jarvis)
-        await jarvis.reply(open_id, ai_reply)
+        ai_reply = await get_ai_reply(user_text, client)
+        await client.reply(open_id, ai_reply)
 
     except Exception as e:
         utils.log_error(f"AI 调用失败: {e}", True)
-        await jarvis.reply(open_id, "抱歉主人，我的大脑连接 DeepSeek 时出了一点小状况。")
+        await client.reply(open_id, "抱歉主人，我的大脑连接 DeepSeek 时出了一点小状况。")
 
 app = FastAPI()
 

@@ -24,6 +24,8 @@ DEEPSEEK_TEMPERATURE = 0.5
 
 FEISHU_APP_ID = os.getenv("FEISHU_APP_ID")
 FEISHU_APP_SECRET = os.getenv("FEISHU_APP_SECRET")
+FEISHU_ROOT_FOLDER_TOKEN = "Z0WTfZVN2lS8KHdTPsHcBU2on9c"
+FEISHU_BASE_URL = "https://open.feishu.cn/open-apis"
 
 JARVIS_SYSTEM_PROMPT = """
 你是一个名为 Jarvis 的全能私人助理。你的性格参考《钢铁侠》中的人工智能助手：
