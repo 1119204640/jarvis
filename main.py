@@ -19,9 +19,9 @@ from fastapi import FastAPI, Request, BackgroundTasks
 import uvicorn
 import json
 from feishu_api import FeiShuClient
-from ai_agent import get_ai_reply
+from ai_agent import get_ai_reply, jarvis_agent
 import utils
-import feishu_tools as tools
+import feishu_tools
 
 # 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
 # 下面作两个保险处理
@@ -58,6 +58,8 @@ app = FastAPI()
 # 主逻辑起点
 @app.post("/webhook")
 async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
+    utils.log_info(jarvis_agent._build_toolset_list())
+
     data = await request.json()
 
     preprocess(data)

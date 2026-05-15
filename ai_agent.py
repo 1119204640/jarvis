@@ -42,5 +42,5 @@ async def get_agent_run_result(user_text, client_instance):
     return resp_obj
 
 async def get_ai_reply(user_text, client_instance):
-    reply_str = await get_agent_run_result(user_text, client_instance)
-    return reply_str
+    result = await get_agent_run_result(user_text, client_instance)
+    return result.output.reply
