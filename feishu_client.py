@@ -57,16 +57,16 @@ class FeiShuClient:
         """
         回复文字消息函数
         """
-        path = "/im/v1/messages"
+        path = "/im/v1/messages?receive_id_type=open_id"
         json_body = {"content": json.dumps({"text": text}), 
                      "msg_type": "text", 
                      "receive_id": open_id, 
-                     "uuid": uuid4()}
+                     "uuid": str(uuid4())}
         return await self._request("POST", path, json=json_body)
 
     async def create_bitable_base(self, name: str, folder_token: str):
         """
-        创建一个新的多维表格文件 (Bitable Base)
+        在文件夹中创建一个新的多维表格文件 (Bitable Base)
         """
         path = "/bitable/v1/apps"
         json_body = {
