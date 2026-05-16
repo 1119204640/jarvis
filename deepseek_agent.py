@@ -48,7 +48,7 @@ async def get_agent_run_result(user_text, client_instance):
 
 async def get_ai_reply(user_text, client_instance):
     result = await get_agent_run_result(user_text, client_instance)
-    logger.info(f"agent run result: {result}")
+    logger.info("agent run result", result)
     return result.output
 
 # region 注册 Agent 工具，pydantic_ai 会根据函数内部注释自动调用

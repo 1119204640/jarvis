@@ -32,12 +32,15 @@ def _check_event_id(data):
 
     event_id = data.get("header", {}).get("event_id")
     if event_id in processed_event_ids:
-        logger.warn(f"--- 拦截到重复的 event_id: {event_id} ---")
-        return {"code": 0} # 假装处理过了，让飞书闭嘴
+        logger.warn(f"拦截到重复的 event_id", event_id)
+        return True
 
     processed_event_ids.add(event_id)   # 没处理过的存进去
     if len(processed_event_ids) > 1000:
         processed_event_ids.clear() # 避免 set 会越来越大，最终吃光内存
+
+    return False
+
 
 async def _handle_logic(open_id, user_text):
     """作异步处理，先回复了飞书，再在后台慢慢处理 AI 逻辑"""
@@ -47,7 +50,7 @@ async def _handle_logic(open_id, user_text):
         await client.reply(open_id, ai_reply)
 
     except Exception as e:
-        logger.error(f"AI 调用失败，飞书报错: {e}")
+        logger.error(f"AI 调用失败，飞书报错", e)
         await client.reply(open_id, "抱歉主人，我的大脑连接 DeepSeek 时出了一点小状况。")
 
 app = FastAPI()
@@ -57,7 +60,9 @@ app = FastAPI()
 async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
 
-    _check_event_id(data)
+    is_repeat = _check_event_id(data)
+    if is_repeat:
+        return {"code": 0}  # 假装处理过了，让飞书闭嘴
 
     # 处理 Challenge 验证（创建机器人的时候用）
     if data.get("type") == "url_verification":
@@ -75,9 +80,7 @@ async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
             user_text = json.loads(content_str).get("text", "")
 
             # TODO:立刻把任务丢给后台，然后直接返回 200 给飞书，防止飞书因为超时而对本服务器重新发起 post 请求
-            # background_tasks.add_task(_handle_logic, open_id, user_text)
-
-            return await _handle_logic(open_id,user_text)
+            background_tasks.add_task(_handle_logic, open_id, user_text)
 
     return {"code": 0}
 

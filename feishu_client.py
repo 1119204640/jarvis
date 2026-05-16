@@ -30,7 +30,7 @@ class FeiShuClient:
         async with httpx.AsyncClient() as client:
             resp = await client.request("POST", url, headers=headers, json=json_body)
             data = resp.json()
-            logger.info(f"tenant_access_token 刷新: respond = {json.dumps(data)}")
+            logger.info(f"tenant_access_token 刷新", data)
             self.token = data.get("tenant_access_token")
             self.expire = time.time() + data.get("expires", 7200) - 600 # 提前10分钟过期
             return self.token
@@ -49,8 +49,11 @@ class FeiShuClient:
 
         async with httpx.AsyncClient() as client:
             resp = await client.request(request_type, f"{self.base_url}{path}", headers=headers, **kwargs)
-            data = resp.json()
-            logger.info(f"向飞书发起 http {request_type} 请求: path = {self.base_url}{path}, headers = {headers}, json_body = {kwargs}\n respond = {data}")
+            logData = {"path": f"{self.base_url}{path}",
+                       "headers": headers,
+                       "body": kwargs,
+                       "respond": resp,}
+            logger.info(f"向飞书发起 {request_type} 请求", logData)
             return resp.json()
 
     async def reply(self, open_id: str, text: str):
