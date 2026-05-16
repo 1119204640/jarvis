@@ -18,39 +18,36 @@
 from fastapi import FastAPI, Request, BackgroundTasks
 import uvicorn
 import json
-from feishu_api import FeiShuClient
-from ai_agent import get_ai_reply, jarvis_agent
-from logger import log
-import feishu_tools
+
+from feishu_client import FeiShuClient
+import deepseek_agent as agent
+import logger
 
 # 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
-# 下面作两个保险处理
 
-# 保险1：这里定义一个简单的缓存，如果收到飞书发来相同的 event_id 就不做回应，让飞书不再请求
 processed_event_ids = set()
-def preprocess(data):
+def _check_event_id(data):
+    """定义一个简单的缓存，如果收到飞书发来相同的 event_id 就不做回应，让飞书不再请求"""
     global processed_event_ids # TODO:转用 redis 或者 diskcache，设置一个 10 分钟自动过期的 key
 
     event_id = data.get("header", {}).get("event_id")
     if event_id in processed_event_ids:
-        log(f"--- 拦截到重试请求: {event_id} ---")
+        logger.warn(f"--- 拦截到重复的 event_id: {event_id} ---")
         return {"code": 0} # 假装处理过了，让飞书闭嘴
 
     processed_event_ids.add(event_id)   # 没处理过的存进去
     if len(processed_event_ids) > 1000:
         processed_event_ids.clear() # 避免 set 会越来越大，最终吃光内存
 
-# 实例化
-
-# 保险2：这里作异步处理，先回复了飞书，再在后台慢慢处理 AI 逻辑
-async def handle_logic(open_id, user_text):
+async def _handle_logic(open_id, user_text):
+    """作异步处理，先回复了飞书，再在后台慢慢处理 AI 逻辑"""
     client = FeiShuClient()
     try:
-        ai_reply = await get_ai_reply(user_text, client)
+        ai_reply = await agent.get_ai_reply(user_text, client)
         await client.reply(open_id, ai_reply)
 
     except Exception as e:
-        log(f"AI 调用失败: {e}", "error", True)
+        logger.error(f"AI 调用失败，飞书报错: {e}")
         await client.reply(open_id, "抱歉主人，我的大脑连接 DeepSeek 时出了一点小状况。")
 
 app = FastAPI()
@@ -58,11 +55,9 @@ app = FastAPI()
 # 主逻辑起点
 @app.post("/webhook")
 async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
-    log(jarvis_agent._build_toolset_list())
-
     data = await request.json()
 
-    preprocess(data)
+    _check_event_id(data)
 
     # 处理 Challenge 验证（创建机器人的时候用）
     if data.get("type") == "url_verification":
@@ -79,8 +74,10 @@ async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
             content_str = event["message"]["content"]
             user_text = json.loads(content_str).get("text", "")
 
-            # 立刻把任务丢给后台，然后直接返回 200 给飞书，防止飞书因为超时而对本服务器重新发起 post 请求
-            background_tasks.add_task(handle_logic, open_id, user_text)
+            # TODO:立刻把任务丢给后台，然后直接返回 200 给飞书，防止飞书因为超时而对本服务器重新发起 post 请求
+            # background_tasks.add_task(_handle_logic, open_id, user_text)
+
+            return await _handle_logic(open_id,user_text)
 
     return {"code": 0}
 
