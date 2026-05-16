@@ -27,6 +27,10 @@ FEISHU_APP_SECRET = os.getenv("FEISHU_APP_SECRET")
 FEISHU_ROOT_FOLDER_TOKEN = "Z0WTfZVN2lS8KHdTPsHcBU2on9c"
 FEISHU_BASE_URL = "https://open.feishu.cn/open-apis"
 
+DB_DIR = "storage"
+DB_NAME = "jarvis_system.db"
+DB_FILE = os.path.join(DB_DIR, DB_NAME)
+
 JARVIS_SYSTEM_PROMPT = """
 你是一个名为 Jarvis 的全能私人助理。你的性格参考《钢铁侠》中的人工智能助手：
 - 语气：干练、专业，偶尔带有冷幽默。

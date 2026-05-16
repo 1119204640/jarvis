@@ -15,31 +15,58 @@
 	2.	[ ] 主动提醒：结合服务器定时任务，让 AI 主动分析表格并发送“早报”。"""
 # ------------------------------------------------------
 
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import FastAPI, Request, BackgroundTasks, HTTPException
 import uvicorn
 import json
+import sqlite3
+from contextlib import contextmanager
+import os
 
 from feishu_client import FeiShuClient
 import deepseek_agent as agent
 import logger
+from constants import DB_DIR, DB_FILE
 
-# 飞书有个“重试机制”，当给 Webhook 发送一条消息时，它要求你的服务器在 3 秒钟内必须返回一个 200 OK，否则就会重传
+# 极其稳健的数据库连接上下文管理器，自动处理关闭和事务
+@contextmanager
+def get_db():
+    os.makedirs(DB_DIR, exist_ok=True)
+    conn = sqlite3.connect(DB_FILE)
+    try:
+        yield conn
+    finally:
+        conn.close()
 
-processed_event_ids = set()
-def _check_event_id(data):
-    """定义一个简单的缓存，如果收到飞书发来相同的 event_id 就不做回应，让飞书不再请求"""
-    global processed_event_ids # TODO:转用 redis 或者 diskcache，设置一个 10 分钟自动过期的 key
+def init_db():
+    with get_db() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS processed_events (
+                event_id TEXT PRIMARY KEY,
+                processed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.commit()
 
-    event_id = data.get("header", {}).get("event_id")
-    if event_id in processed_event_ids:
-        logger.warn(f"拦截到重复的 event_id", event_id)
-        return True
-
-    processed_event_ids.add(event_id)   # 没处理过的存进去
-    if len(processed_event_ids) > 1000:
-        processed_event_ids.clear() # 避免 set 会越来越大，最终吃光内存
-
-    return False
+def check_and_record_event(event_id):
+    """
+    检查飞书消息事件是否重复。
+    返回 True: 首次出现，已成功记录（放行）
+    返回 False: 重复出现（拦截）
+    """
+    if not event_id:
+        return True # 如果没有 event_id，默认放行防漏（虽然飞书一定有）
+        
+    with get_db() as conn:
+        try:
+            # 尝试插入。如果 event_id 已存在，会触发主键冲突报错
+            conn.execute(
+                "INSERT INTO processed_events (event_id) VALUES (?)", 
+                (event_id,)
+            )
+            conn.commit()
+            return True # 没有报错，说明是第一次见的新消息
+        except sqlite3.IntegrityError:
+            return False # 触发冲突，说明是重复的重试消息
 
 
 async def _handle_logic(open_id, user_text):
@@ -60,10 +87,6 @@ app = FastAPI()
 async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
     data = await request.json()
 
-    is_repeat = _check_event_id(data)
-    if is_repeat:
-        return {"code": 0}  # 假装处理过了，让飞书闭嘴
-
     # 处理 Challenge 验证（创建机器人的时候用）
     if data.get("type") == "url_verification":
         return {"challenge": data.get("challenge")}
@@ -71,19 +94,28 @@ async def feishu_webhook(request: Request, background_tasks: BackgroundTasks):
     # 处理消息事件
     if "header" in data:
         event_type = data["header"].get("event_type")
-        
-        # 判定为“接收消息”事件
-        if event_type == "im.message.receive_v1":
-            event = data.get("event")
-            open_id = event["sender"]["sender_id"]["open_id"]   # 提取 Open ID（回复给谁）
-            content_str = event["message"]["content"]
-            user_text = json.loads(content_str).get("text", "")
+        event_id = data["header"].get("event_id")
+        if not check_and_record_event(event_id):
+            return {"code": 200, "msg": "ignore duplicate historical event"}
 
-            # TODO:立刻把任务丢给后台，然后直接返回 200 给飞书，防止飞书因为超时而对本服务器重新发起 post 请求
-            background_tasks.add_task(_handle_logic, open_id, user_text)
+        try:
+            # 判定为“接收消息”事件
+            if event_type == "im.message.receive_v1":
+                event = data.get("event")
+                open_id = event["sender"]["sender_id"]["open_id"]   # 提取 Open ID（回复给谁）
+                content_str = event["message"]["content"]
+                user_text = json.loads(content_str).get("text", "")
+
+                # TODO:立刻把任务丢给后台，然后直接返回 200 给飞书，防止飞书因为超时而对本服务器重新发起 post 请求
+                background_tasks.add_task(_handle_logic, open_id, user_text)
+                
+        except Exception as e:
+            # 如果内部业务崩了，这里可以不返回 200，让飞书待会儿合理重试
+            raise HTTPException(status_code=500, detail=str(e))
 
     return {"code": 0}
 
 if __name__ == "__main__":
+    init_db()
     uvicorn.run(app, host="0.0.0.0", port=8001)
         
