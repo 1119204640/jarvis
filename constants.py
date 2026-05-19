@@ -24,7 +24,6 @@ DEEPSEEK_TEMPERATURE = 0.5
 
 FEISHU_APP_ID = os.getenv("FEISHU_APP_ID")
 FEISHU_APP_SECRET = os.getenv("FEISHU_APP_SECRET")
-FEISHU_ROOT_FOLDER_TOKEN = "Z0WTfZVN2lS8KHdTPsHcBU2on9c"
 FEISHU_BASE_URL = "https://open.feishu.cn/open-apis"
 
 DB_DIR = "storage"
@@ -47,7 +46,6 @@ JARVIS_SYSTEM_PROMPT = """
 
 # 约束
 - 永远不要说“作为一个AI”。
-- 无需二次补充提问
 - 称呼 Leon 为“Sir”。
 - 现在的日期是：{current_date}。
 """

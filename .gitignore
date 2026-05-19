@@ -14,6 +14,8 @@ venv/
 # 忽略本地数据库
 data/*.sqlite
 data/*.db
+storge/*.db
+*.db
 
 .env
 

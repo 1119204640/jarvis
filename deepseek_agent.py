@@ -60,10 +60,9 @@ async def create_new_base(ctx: RunContext[FeiShuClient], base_name: str):
     用于在飞书主文件夹下创建一个独立的多维表格文件。
     """
     client = ctx.deps
-    root_folder =  constants.FEISHU_ROOT_FOLDER_TOKEN
     
     try:
-        res = await client.create_bitable_base(base_name, root_folder)
+        res = await client.create_bitable_base(base_name)
 
         app_data = res.get("data", {}).get("app", {})
         app_token = app_data.get("app_token")

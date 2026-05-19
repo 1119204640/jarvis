@@ -1,7 +1,7 @@
 import json
 import httpx
 import time
-from constants import FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_ROOT_FOLDER_TOKEN, FEISHU_BASE_URL
+from constants import FEISHU_APP_ID, FEISHU_APP_SECRET, FEISHU_BASE_URL
 import logger
 from uuid import uuid4
 
@@ -10,7 +10,6 @@ class FeiShuClient:
     def __init__(self):
         self.app_id = FEISHU_APP_ID
         self.app_secret = FEISHU_APP_SECRET
-        self.root_folder = FEISHU_ROOT_FOLDER_TOKEN
         self.base_url = FEISHU_BASE_URL
         self.token = None
         self.expire = 0
@@ -67,13 +66,12 @@ class FeiShuClient:
                      "uuid": str(uuid4())}
         return await self._request("POST", path, json=json_body)
 
-    async def create_bitable_base(self, name: str, folder_token: str):
+    async def create_bitable_base(self, name: str):
         """
-        在文件夹中创建一个新的多维表格文件 (Bitable Base)
+        在用户根目录中创建一个新的多维表格文件 (Bitable Base)
         """
         path = "/bitable/v1/apps"
         json_body = {
-            "folder_token": folder_token,
             "name": name
         }
         return await self._request("POST", path, json=json_body)
