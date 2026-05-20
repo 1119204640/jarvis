@@ -1,6 +1,7 @@
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, ModelMessage, UserPromptPart
 import constants
 from feishu_client import FeiShuClient
 from utils import get_current_date_str
@@ -42,14 +43,26 @@ def inject_dynamic_context(ctx: RunContext[FeiShuClient]) -> str:
     return f"\n【系统动态参数】\n当前北京时间是: {get_current_date_str()}"
 
 # 会返回 AgentRunResult 对象
-async def get_agent_run_result(user_text, client_instance):
-    resp_obj = await jarvis_agent.run(user_text, deps=client_instance)
+async def get_agent_run_result(user_text, client_instance, history=None):
+    model_messages = _convert_history(history) if history else None
+    resp_obj = await jarvis_agent.run(user_text, deps=client_instance, message_history=model_messages)
     return resp_obj
 
-async def get_ai_reply(user_text, client_instance):
-    result = await get_agent_run_result(user_text, client_instance)
-    logger.info("agent run result", result)
+async def get_ai_reply(user_text, client_instance, history=None):
+    result = await get_agent_run_result(user_text, client_instance, history)
     return result.output
+
+def _convert_history(history: list[dict]) -> list[ModelMessage]:
+    """将内存字典格式的历史记录转换为 pydantic-ai 的 ModelMessage 列表"""
+    messages = []
+    for msg in history:
+        if msg["role"] == "user":
+            part = UserPromptPart(content=msg["content"])
+            messages.append(ModelRequest(parts=[part]))
+        elif msg["role"] == "assistant":
+            part = TextPart(content=msg["content"])
+            messages.append(ModelResponse(parts=[part]))
+    return messages
 
 # region 注册 Agent 工具，pydantic_ai 会根据函数内部注释自动调用
 

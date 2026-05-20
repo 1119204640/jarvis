@@ -26,3 +26,5 @@
 - rich 库自己写一个日志功能
 
 - 通过 pydantic_ai 里面用到的 pydantic_graph，理解 graph 状态机
+
+- 长链接发二进制帧？但是 webhook 发 json帧？但是又不知道二进制帧 header 长度，没法解析 data

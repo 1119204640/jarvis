@@ -25,6 +25,12 @@ DEEPSEEK_TEMPERATURE = 0.5
 FEISHU_APP_ID = os.getenv("FEISHU_APP_ID")
 FEISHU_APP_SECRET = os.getenv("FEISHU_APP_SECRET")
 FEISHU_BASE_URL = "https://open.feishu.cn/open-apis"
+FEISHU_REDIRECT_URI = os.getenv("FEISHU_REDIRECT_URI")
+FEISHU_OAUTH_AUTHORIZE_URL = (
+    f"{FEISHU_BASE_URL}/authen/v1/authorize"
+    f"?app_id={FEISHU_APP_ID}"
+    f"&redirect_uri={FEISHU_REDIRECT_URI}"
+)
 
 DB_DIR = "storage"
 DB_NAME = "jarvis_system.db"

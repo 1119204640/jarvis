@@ -21,3 +21,5 @@ storge/*.db
 
 .log
 log/
+
+.vscode
