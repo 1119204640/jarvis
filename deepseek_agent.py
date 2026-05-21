@@ -1,7 +1,9 @@
+import os
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.messages import ModelRequest, ModelResponse, TextPart, ModelMessage, UserPromptPart
+from pydantic_ai.mcp import MCPServerStdio
 import constants
 from feishu_client import FeiShuClient
 from utils import get_current_date_str
@@ -13,6 +15,35 @@ deepseek_model = OpenAIChatModel(
     provider=OpenAIProvider(api_key=constants.DEEPSEEK_KEY, base_url=constants.DEEPSEEK_URL),
 )
 
+def _log_mcp_message(message: str):
+    """捕获 lark-mcp 子进程的日志（含飞书 API 错误详情）"""
+    logger.info(f"[MCP] {message}")
+
+async def _on_mcp_tool_call(ctx, call_tool, tool_name, args):
+    """拦截每次 MCP 工具调用，记录请求和结果"""
+    logger.info(f"[MCP] 调用工具 {tool_name} | 参数: {args}")
+    try:
+        result = await call_tool(tool_name, args)
+        logger.success(f"[MCP] {tool_name} 成功: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"[MCP] {tool_name} 失败: {e}")
+        raise
+
+# 创建飞书 MCP Server（stdio 传输，启动 npx 子进程）
+mcp_server = MCPServerStdio(
+    'npx',
+    args=[
+        '-y', '@larksuiteoapi/lark-mcp', 'mcp',
+        '-a', constants.FEISHU_APP_ID,
+        '-s', constants.FEISHU_APP_SECRET,
+    ],
+    env=os.environ,
+    timeout=30,
+    log_handler=_log_mcp_message,
+    process_tool_call=_on_mcp_tool_call,
+)
+
 #  ------------------------------------------------------------------------------------------                                                                                                                          
 #  实例化核心智能体
                                                                                                                                                                                                                      
@@ -21,7 +52,7 @@ deepseek_model = OpenAIChatModel(
 #  当给 Agent 设置 output_type（如 JarvisResponseSchema）时，pydantic-ai 底层会自动生成                                                                                                                                
 #  一个内部“输出工具”（kind='output'），与用户通过 @agent.tool 注册的函数工具一并发送给                                                                                                                                
 #  模型。在 tool_choice='auto' 的情况下，模型看到输出工具是一个合法的“快捷出口”，可能直接                                                                                                                              
-#  调用它返回一段文本结束对话，完全跳过真正需要执行的函数工具（如 create_new_base）。                                                                                                                                  
+#  调用它返回一段文本结束对话，完全跳过真正需要执行的函数工具。                                                                                                                                  
                                                                                                                                                                                                                      
 #  现象：工具注册正确、工具列表里也存在，但函数体永远不会被调用。                                                                                                                                                      
 #  解决：去掉 output_type，让模型只剩下纯文本回复 + 函数工具两条路。系统提示词中要求                                                                                                                                   
@@ -30,10 +61,10 @@ deepseek_model = OpenAIChatModel(
 
 jarvis_agent = Agent(
     model=deepseek_model,
-    # output_type=JarvisResponseSchema,                  # 强制要求 AI 返回上面的 JSON 结构
-    system_prompt=constants.JARVIS_SYSTEM_PROMPT,      # 静态的基础性格设定
-    deps_type=FeiShuClient,                            # 声明工具将要使用的依赖类型
-    retries=3                                          # 如果 AI 格式写错，框架自动打回重做最多 3 次
+    system_prompt=constants.JARVIS_SYSTEM_PROMPT,
+    deps_type=FeiShuClient,
+    toolsets=[mcp_server],
+    retries=3
 )
 
 # 动态系统提示词注入
@@ -64,32 +95,19 @@ def _convert_history(history: list[dict]) -> list[ModelMessage]:
             messages.append(ModelResponse(parts=[part]))
     return messages
 
-# region 注册 Agent 工具，pydantic_ai 会根据函数内部注释自动调用
-
-@jarvis_agent.tool # 相当于 agent.tool(create_new_base)
-async def create_new_base(ctx: RunContext[FeiShuClient], base_name: str):
-    """
-    当主人说“新建个表”、“开始个新项目”或“帮我记个东西”时调用。
-    用于在飞书主文件夹下创建一个独立的多维表格文件。
-    """
-    client = ctx.deps
-    
+async def init_mcp():
+    """在服务启动时连接 MCP Server，保持长连接"""
     try:
-        res = await client.create_bitable_base(base_name)
-
-        app_data = res.get("data", {}).get("app", {})
-        app_token = app_data.get("app_token")
-        app_url = app_data.get("url")
-        
-        if not app_token:
-            return f"not app_token | Base 的创建似乎卡住了，请检查权限或文件夹 Token。"
-
-        # 把链接甩给主人
-        return (f"飞书 Base《{base_name}》已创建完毕。\n"
-                f"app_token: {app_token}\n"
-                f"app_url: {app_url}")
-                
+        await mcp_server.__aenter__()
+        tools = await mcp_server.list_tools()
+        logger.success(f"MCP 已连接，可用工具 {len(tools)} 个: {[t.name for t in tools]}")
     except Exception as e:
-        return f"飞书调用异常: {str(e)}"
+        logger.error(f"MCP 连接失败: {e}")
 
-# endregion
+async def shutdown_mcp():
+    """服务关闭时断开 MCP 连接"""
+    try:
+        await mcp_server.__aexit__(None, None, None)
+        logger.info("MCP 连接已关闭")
+    except Exception:
+        pass

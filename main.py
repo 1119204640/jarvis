@@ -125,7 +125,11 @@ async def lifespan(app: FastAPI):
     t.start()
     logger.success("WebSocket 长连接已启动")
 
+    await agent.init_mcp()
+
     yield
+
+    await agent.shutdown_mcp()
     # daemon 线程随进程退出自动结束
 
 async def _handle_logic(chat_id, open_id, user_text):

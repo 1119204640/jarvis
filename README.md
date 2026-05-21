@@ -17,7 +17,7 @@
   - 没填写 uuid 导致的
 
 -                                                                                                                                                                                                                
-- 当给 Agent 设置 output_type（如 JarvisResponseSchema）时，pydantic-ai 底层会自动生成一个内部“输出工具”（kind='output'），与用户通过 @agent.tool 注册的函数工具一并发送给模型。在 tool_choice='auto' 的情况下，模型看到输出工具是一个合法的“快捷出口”，可能直接调用它返回一段文本结束对话，完全跳过真正需要执行的函数工具（如 create_new_base）。
+- 当给 Agent 设置 output_type（如 JarvisResponseSchema）时，pydantic-ai 底层会自动生成一个内部“输出工具”（kind='output'），与用户通过 @agent.tool 注册的函数工具一并发送给模型。在 tool_choice='auto' 的情况下，模型看到输出工具是一个合法的“快捷出口”，可能直接调用它返回一段文本结束对话，完全跳过真正需要执行的函数工具。
   - 现象：工具注册正确、工具列表里也存在，但函数体永远不会被调用。
   - 解决：去掉 output_type，让模型只剩下纯文本回复 + 函数工具两条路。系统提示词中要求“必须先调用工具”的指令就能真正约束模型行为。
 
